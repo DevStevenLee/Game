@@ -4,13 +4,10 @@ const c = canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
-let mouseX, mouseY;
 
-addEventListener("mousemove", e => {
-	mouseX = e.clientX;
-	mouseY = e.clientY;
-});
 
+
+let holding, mark;
 class Note{
 	constructor(){
 		this.notes = [];
@@ -42,8 +39,19 @@ class Note{
 	}
 	
 
-	update(){
-		let mark = -1;
+	mouseMove(){
+		this.notes[mark].x = mouseX - (this.notes[mark].img.width / 2);
+		this.notes[mark].y = mouseY - (this.notes[mark].img.height / 2);
+	}
+
+	mouseUp(){
+		holding = false;
+	}
+
+	mouseDown(){
+		if(holding) return;
+
+		mark = -1;
 
 		for(let i = 0 ; i < this.notes.length ; i++){
 			if(mouseX > this.notes[i].x && mouseX < this.notes[i].x + this.notes[i].img.width &&
@@ -53,10 +61,28 @@ class Note{
 		}
 		
 		if(mark != -1)
-			this.notes.splice(mark, 1);
-
+			holding = true;
 	}
 }
+
+let mouseX, mouseY;
+
+
+addEventListener("mousemove", e => {
+	mouseX = e.clientX;
+	mouseY = e.clientY;
+
+	if(holding) note.mouseMove();
+});
+
+addEventListener("mouseup", e => {
+	note.mouseUp();
+})
+
+addEventListener("mousedown", e => {
+	note.mouseDown();
+});
+
 
 let note;
 function init(){
