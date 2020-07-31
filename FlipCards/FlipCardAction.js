@@ -4,10 +4,27 @@ const c = canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
+let mouseX, mouseY;
+
+
+addEventListener("mousemove", e => {
+	mouseX = e.clientX;
+	mouseY = e.clientY;
+
+	if(isDragging) note.mouseMove();
+});
+
+addEventListener("mouseup", e => {
+	note.mouseUp();
+})
+
+addEventListener("mousedown", e => {
+	note.mouseDown();
+});
 
 
 
-let holding, mark;
+let isDragging, mark;
 class Note{
 	constructor(){
 		this.notes = [];
@@ -45,11 +62,11 @@ class Note{
 	}
 
 	mouseUp(){
-		holding = false;
+		isDragging = false;
 	}
 
 	mouseDown(){
-		if(holding) return;
+		if(isDragging) return;
 
 		mark = -1;
 
@@ -61,30 +78,42 @@ class Note{
 		}
 		
 		if(mark != -1)
-			holding = true;
+			isDragging = true;
 	}
 }
 
-let mouseX, mouseY;
+class Name{
+	constructor(){
+		this.names = [];
+	}
 
+	insertName(img){
+		let name = {};
+		name.img = new Image();
+		name.img.src = img;
 
-addEventListener("mousemove", e => {
-	mouseX = e.clientX;
-	mouseY = e.clientY;
+		name.x = (canvas.width / 4) * (this.names.length) + 50;
+		name.y = 550;
 
-	if(holding) note.mouseMove();
-});
+		this.names.push(name); 
+	}
 
-addEventListener("mouseup", e => {
-	note.mouseUp();
-})
+	drawImgInit(){
+		for(let i = 0 ; i < this.names.length ; i++){
+			this.names[i].img.addEventListener("load", e => {
+				c.drawImage(this.names[i].img, this.names[i].x, this.names[i].y);
+			});
+		}
+	}
 
-addEventListener("mousedown", e => {
-	note.mouseDown();
-});
+	drawImg(){
+		for(let i = 0 ; i < this.names.length ; i++){
+			c.drawImage(this.names[i].img, this.names[i].x, this.names[i].y);
+		}
+	}
+}
 
-
-let note;
+let note, name;
 function init(){
 	note = new Note();
 	note.insertNote("./img/wholeNote.png");
@@ -92,15 +121,22 @@ function init(){
 	note.insertNote("./img/quarterNote.png");
 	note.insertNote("./img/eighthNote.png");
 
+	name = new Name();
+	name.insertName("./img/wholeName.png");
+	name.insertName("./img/halfName.png");
+	name.insertName("./img/quarterName.png");
+	name.insertName("./img/eighthName.png");
+
 	note.drawImgInit();
+	name.drawImgInit();
 }
 
 function animate(){
 	requestAnimationFrame(animate);
 	c.clearRect(0, 0, canvas.width, canvas.height);
 	
+	name.drawImg();
 	note.drawImg();	
-	note.update();
 }
 
 init();
