@@ -11,133 +11,86 @@ addEventListener("mousemove", e => {
 	mouseX = e.clientX;
 	mouseY = e.clientY;
 
-	if(isDragging) note.mouseMove();
 });
 
 addEventListener("mouseup", e => {
-	note.mouseUp();
+
 })
 
 addEventListener("mousedown", e => {
-	note.mouseDown();
+
 });
 
 
 
-let isDragging, mark;
 class Note{
-	constructor(){
+	constructor(width, height, x, y){
 		this.notes = [];
+		this.width = width;
+		this.height = height;
+		this.x = x;
+		this.y = y;
+		this.yGap = 180;
 	}
 
-	insertNote(img){
-		let note = {};
-		note.img = new Image();
-		note.img.src = img;
+	makeNoteACard(x, y){
+		var card = {};
 
-		note.x = (canvas.width / 4) * (this.notes.length) + 50;
-		note.y = 150;
+		card["x"] = x;
+		card["y"] = y;
+		card["width"] = this.width;
+		card["height"] = this.height;
 
-		this.notes.push(note); 
+		this.notes.push(card);
 	}
-	
-	drawImgInit(){
-		for(let i = 0 ; i < this.notes.length ; i++){
-			this.notes[i].img.addEventListener("load", e => {
-				c.drawImage(this.notes[i].img, this.notes[i].x, this.notes[i].y);
-			});
+
+	makeNoteCards(len){
+		if(this.notes.length == 0){
+			this.makeNoteACard(this.x, this.y);
+			len--;
+		}
+
+		for(let i = 0 ; i < len ; i++){
+			this.makeNoteACard(this.x, this.notes[this.notes.length-1].y + this.yGap);		
 		}
 	}
 
-	drawImg(){
+	drawCards(){
 		for(let i = 0 ; i < this.notes.length ; i++){
-			c.drawImage(this.notes[i].img, this.notes[i].x, this.notes[i].y);
+			console.log(this.notes[i]);
+			c.fillRect(this.notes[i].x, this.notes[i].y, this.notes[i].width, this.notes[i].height);
 		}
-	}
-	
 
-	mouseMove(){
-		this.notes[mark].x = mouseX - (this.notes[mark].img.width / 2);
-		this.notes[mark].y = mouseY - (this.notes[mark].img.height / 2);
 	}
 
-	mouseUp(){
-		isDragging = false;
-	}
-
-	mouseDown(){
-		if(isDragging) return;
-
-		mark = -1;
-
-		for(let i = 0 ; i < this.notes.length ; i++){
-			if(mouseX > this.notes[i].x && mouseX < this.notes[i].x + this.notes[i].img.width &&
-			   mouseY > this.notes[i].y && mouseY < this.notes[i].y + this.notes[i].img.height){
-				mark = i;
-			}
-		}
-		
-		if(mark != -1)
-			isDragging = true;
-	}
 }
 
 class Name{
-	constructor(){
-		this.names = [];
-	}
 
-	insertName(img){
-		let name = {};
-		name.img = new Image();
-		name.img.src = img;
+}
 
-		name.x = (canvas.width / 4) * (this.names.length) + 50;
-		name.y = 550;
+const NoteListBoxX = canvas.width * 4 / 5;
+const NoteListBoxY = canvas.height;
 
-		this.names.push(name); 
-	}
-
-	drawImgInit(){
-		for(let i = 0 ; i < this.names.length ; i++){
-			this.names[i].img.addEventListener("load", e => {
-				c.drawImage(this.names[i].img, this.names[i].x, this.names[i].y);
-			});
-		}
-	}
-
-	drawImg(){
-		for(let i = 0 ; i < this.names.length ; i++){
-			c.drawImage(this.names[i].img, this.names[i].x, this.names[i].y);
-		}
-	}
+function setTheBoundary(){
+	c.beginPath();
+	c.moveTo(NoteListBoxX, 0);
+	c.lineTo(NoteListBoxX, NoteListBoxY);
+	c.stroke();
 }
 
 let note, name;
+
 function init(){
-	note = new Note();
-	note.insertNote("./img/wholeNote.png");
-	note.insertNote("./img/halfNote.png");
-	note.insertNote("./img/quarterNote.png");
-	note.insertNote("./img/eighthNote.png");
-
-	name = new Name();
-	name.insertName("./img/wholeName.png");
-	name.insertName("./img/halfName.png");
-	name.insertName("./img/quarterName.png");
-	name.insertName("./img/eighthName.png");
-
-	note.drawImgInit();
-	name.drawImgInit();
+	setTheBoundary();
+	note = new Note(100, 130, NoteListBoxX + 40, 10);
+	note.makeNoteCards(5);
+	note.drawCards();
 }
 
 function animate(){
-	requestAnimationFrame(animate);
-	c.clearRect(0, 0, canvas.width, canvas.height);
-	
-	name.drawImg();
-	note.drawImg();	
+
 }
 
 init();
-animate();
+//animate();
