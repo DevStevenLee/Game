@@ -21,76 +21,117 @@ addEventListener("mousedown", e => {
 
 });
 
+function randomIntFromRange(min, max){
+	return Math.floor(Math.random() * (max - min + 1) + min);
+}
 
+function distance(x1, y1, x2, y2){
+	const xDist = x2 - x1;
+	const yDist = y2 - y1;
+
+	return Math.sqrt(Math.pow(xDist, 2) + Math.pow(yDist, 2));
+}
 
 class Note{
-	constructor(width, height, x, y){
-		this.notes = [];
+	constructor(width, height, x, y, color){
 		this.width = width;
 		this.height = height;
 		this.x = x;
 		this.y = y;
+		this.color = color;
+
 		this.yGap = 180;
 	}
 
-	makeNoteACard(x, y){
-		var card = {};
-
-		card["x"] = x;
-		card["y"] = y;
-		card["width"] = this.width;
-		card["height"] = this.height;
-
-		this.notes.push(card);
+	draw(){
+		c.beginPath();
+		c.fillStyle = this.color;
+		c.fillRect(this.x, this.y, this.width, this.height);
+		c.closePath();
 	}
 
-	makeNoteCards(len){
-		if(this.notes.length == 0){
-			this.makeNoteACard(this.x, this.y);
-			len--;
-		}
-
-		for(let i = 0 ; i < len ; i++){
-			this.makeNoteACard(this.x, this.notes[this.notes.length-1].y + this.yGap);		
-		}
+	update(){
+		this.draw();
 	}
-
-	drawCards(){
-		for(let i = 0 ; i < this.notes.length ; i++){
-			console.log(this.notes[i]);
-			c.fillRect(this.notes[i].x, this.notes[i].y, this.notes[i].width, this.notes[i].height);
-		}
-
-	}
-
 }
 
 class Name{
+	constructor(x, y, radius, color){
+		this.names = [];
 
+		this.x = x;
+		this.y = y;
+		this.radius = radius;
+		this.color = color;
+	}
+
+	draw(){
+		c.beginPath();
+		c.fillStyle = this.color;
+		c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+		c.fill();
+		c.closePath();
+	}
+
+	update(){
+		this.draw();
+	}
 }
 
-const NoteListBoxX = canvas.width * 4 / 5;
-const NoteListBoxY = canvas.height;
+const noteListBoxX = canvas.width * 4 / 5;
+const noteListBoxY = canvas.height;
 
 function setTheBoundary(){
 	c.beginPath();
-	c.moveTo(NoteListBoxX, 0);
-	c.lineTo(NoteListBoxX, NoteListBoxY);
+	c.moveTo(noteListBoxX, 0);
+	c.lineTo(noteListBoxX, noteListBoxY);
 	c.stroke();
 }
 
-let note, name;
+let notes, names;
 
 function init(){
-	setTheBoundary();
-	note = new Note(100, 130, NoteListBoxX + 40, 10);
-	note.makeNoteCards(5);
-	note.drawCards();
+	notes = [];
+	names = [];
+
+	let rectWidth = 100;
+	let rectHeight = 130;
+	let noteListWidth = canvas.width - noteListBoxX;
+
+	notes.push(new Note(rectWidth, rectHeight, noteListBoxX + (noteListWidth - rectWidth) / 2, 30, "black"));
+	
+	for(let i = 1 ; i < 5 ; i++){
+		notes.push(new Note(rectWidth, rectHeight, notes[i-1].x, notes[notes.length-1].y + notes[i-1].yGap, "black"));	
+
+	}
+
+	console.log(notes)
+
+	for(let i = 0 ; i < 5 ; i++){
+		const radius = 30;
+		const x = randomIntFromRange(radius, noteListBoxX - radius);
+		const y = randomIntFromRange(radius, noteListBoxY - radius);
+		const color = "blue";
+
+		names.push(new Name(x, y, radius, color));
+	}
+
 }
 
 function animate(){
+	requestAnimationFrame(animate);
+	c.clearRect(0, 0, canvas.width, canvas.height);
 
+	setTheBoundary();
+
+	notes.forEach(note => {
+		note.update();
+	});
+
+	names.forEach(name => {
+		name.update();
+	});
 }
 
 init();
-//animate();
+animate();
