@@ -4,34 +4,48 @@ const c = canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
-let mouseX, mouseY;
-
 const colors = ["#50514f", "#f25f5c", "#ffe066", "#247ba0", "#70c1b3"];
+let offset = {};
 
-
-addEventListener("mousemove", e => {
-	mouseX = e.clientX;
-	mouseY = e.clientY;
-
-	//console.log("mouseX: " + mouseX);
-	//console.log("mouseY: " + mouseY);
-});
-
-addEventListener("mouseup", e => {
-
-})
+let isDragging;
 
 addEventListener("mousedown", e => {
 	for(let i = 0 ; i < notes.length ; i++){
-		if(mouseX > notes[i].x && mouseX < notes[i].x + notes[i].width && 
-			mouseY > notes[i].y && mouseY < notes[i].y + notes[i].height){
+		if(e.clientX > notes[i].x && e.clientX < notes[i].x + notes[i].width && 
+			e.clientY > notes[i].y && e.clientY < notes[i].y + notes[i].height){
+
+			isDragging = true;
+			addEventListener("mousemove", e => {
+				onMouseMove(e, notes, i);
+			});
+
+			addEventListener("mouseup", e => {
+				onMouseUp(e);
+			})
+
 			notes[i].isFlipped = !notes[i].isFlipped;
 		
+			offset.x = e.clientX - notes[i].x;
+			offset.y = e.clientY - notes[i].y;
+
 			break;
 		}
 	}
 });
 
+function onMouseMove(e, notes, i){
+	if(isDragging){
+		notes[i].x = e.clientX - offset.x;
+		notes[i].y = e.clientY - offset.y;
+	}
+}
+
+function onMouseUp(e){
+	removeEventListener("mousemove", onMouseMove);
+	removeEventListener("mouseup", onMouseUp);
+
+	isDragging = false;
+}
 
 
 function setTheBoundary(){
@@ -61,9 +75,13 @@ function rotate(velocity, angle) {
     return rotatedVelocities;
 }
 
-function randomColor(){
-	console.log(colors.length);
-	return colors[Math.floor(Math.random() * colors.length)];
+function randomColor(copyColors){
+	let rand = Math.floor(Math.random() * copyColors.length);
+	let color = copyColors[rand];
+	
+	copyColors.splice(rand, 1);
+
+	return color;
 }
 
 function resolveCollision(particle, otherParticle) {
@@ -193,18 +211,21 @@ function init(){
 	let rectHeight = 130;
 	let noteListWidth = canvas.width - noteListBoxX;
 
-	notes.push(new Note(rectWidth, rectHeight, noteListBoxX + (noteListWidth - rectWidth) / 2, 30, randomColor()));
+	let copyColors = [...colors];
+
+	notes.push(new Note(rectWidth, rectHeight, noteListBoxX + (noteListWidth - rectWidth) / 2, 30, randomColor(copyColors)));
 	
 	for(let i = 1 ; i < 5 ; i++){
-		notes.push(new Note(rectWidth, rectHeight, notes[i-1].x, notes[notes.length-1].y + notes[i-1].yGap, randomColor()));	
+		notes.push(new Note(rectWidth, rectHeight, notes[i-1].x, notes[notes.length-1].y + notes[i-1].yGap, randomColor(copyColors)));	
 
 	}
 
+	copyColors = [...colors];
+	console.log(copyColors);
 	for(let i = 0 ; i < 5 ; i++){
 		const radius = 50;
 		let x = randomIntFromRange(radius, noteListBoxX - radius);
 		let y = randomIntFromRange(radius, noteListBoxY - radius);
-		const color = "blue";
 		
 		for(let j = 0 ; j < names.length ; j++){
 			if(distance(x, y, names[j].x, names[j].y) - radius * 2 < 0){
@@ -215,7 +236,7 @@ function init(){
 			}
 		}
 		
-		names.push(new Name(x, y, radius, color));			
+		names.push(new Name(x, y, radius, randomColor(copyColors)));			
 	}
 
 }
