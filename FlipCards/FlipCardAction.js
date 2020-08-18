@@ -7,21 +7,28 @@ canvas.height = innerHeight;
 const colors = ["#50514f", "#f25f5c", "#ffe066", "#247ba0", "#70c1b3"];
 let offset = {};
 
-let isDragging;
+let isMouseDown = false;
 
 addEventListener("mousedown", e => {
 	for(let i = 0 ; i < notes.length ; i++){
 		if(e.clientX > notes[i].x && e.clientX < notes[i].x + notes[i].width && 
 			e.clientY > notes[i].y && e.clientY < notes[i].y + notes[i].height){
 
-			isDragging = true;
+			isMouseDown = true;
+
+			for(let j = 0 ; j < notes.length ; j++){
+				if(j == i) continue;
+				notes[j].isFlipped = false;
+			}
+
+			//notes.push(notes.splice(i, 1));
 			addEventListener("mousemove", e => {
-				onMouseMove(e, notes, i);
+				onMouseMove(e, i);
 			});
 
 			addEventListener("mouseup", e => {
-				onMouseUp(e);
-			})
+				onMouseUp(e, i);
+			});
 
 			notes[i].isFlipped = !notes[i].isFlipped;
 		
@@ -33,18 +40,21 @@ addEventListener("mousedown", e => {
 	}
 });
 
-function onMouseMove(e, notes, i){
-	if(isDragging){
-		notes[i].x = e.clientX - offset.x;
-		notes[i].y = e.clientY - offset.y;
+
+function onMouseMove(e, idx){
+	if(notes[idx].isFlipped && isMouseDown){
+		notes[idx].x = e.clientX - offset.x;
+		notes[idx].y = e.clientY - offset.y;
 	}
 }
 
-function onMouseUp(e){
-	removeEventListener("mousemove", onMouseMove);
-	removeEventListener("mouseup", onMouseUp);
+function onMouseUp(e, idx){
+	isMouseDown = false;
 
-	isDragging = false;
+	notes[idx].x = notes[idx].offset.x;
+	notes[idx].y = notes[idx].offset.y;
+	notes[idx].width = notes[idx].offset.width;
+	notes[idx].height = notes[idx].offset.height;
 }
 
 
@@ -125,16 +135,20 @@ function resolveCollision(particle, otherParticle) {
 
 
 class Note{
-	constructor(width, height, x, y, color){
-		this.width = width;
-		this.height = height;
+	constructor(x, y, width, height, color){
 		this.x = x;
 		this.y = y;
+		this.width = width;
+		this.height = height;
 		this.color = color;
-
 
 		this.isFlipped = false;
 		this.yGap = 180;
+		this.offset = { "x": this.x,
+						"y": this.y,
+						"width": this.width, 
+						"height": this.height
+						};
 	}
 
 	draw(){
@@ -146,7 +160,6 @@ class Note{
 
 	update(){
 		this.draw();
-
 	}
 }
 
@@ -155,8 +168,8 @@ class Name{
 		this.names = [];
 
 		this.velocity = {
-			x: Math.random() + 2,
-			y: Math.random() + 2
+			x: Math.random() + 5,
+			y: Math.random() + 5
 		}
 
 		this.x = x;
@@ -213,15 +226,15 @@ function init(){
 
 	let copyColors = [...colors];
 
-	notes.push(new Note(rectWidth, rectHeight, noteListBoxX + (noteListWidth - rectWidth) / 2, 30, randomColor(copyColors)));
+	notes.push(new Note(noteListBoxX + (noteListWidth - rectWidth) / 2, 30, rectWidth, rectHeight, randomColor(copyColors)));
 	
 	for(let i = 1 ; i < 5 ; i++){
-		notes.push(new Note(rectWidth, rectHeight, notes[i-1].x, notes[notes.length-1].y + notes[i-1].yGap, randomColor(copyColors)));	
+		notes.push(new Note( notes[i-1].x, notes[notes.length-1].y + notes[i-1].yGap, rectWidth, rectHeight, randomColor(copyColors)));	
 
 	}
 
 	copyColors = [...colors];
-	console.log(copyColors);
+
 	for(let i = 0 ; i < 5 ; i++){
 		const radius = 50;
 		let x = randomIntFromRange(radius, noteListBoxX - radius);
