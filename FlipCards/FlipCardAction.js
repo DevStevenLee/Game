@@ -8,6 +8,7 @@ const colors = ["#50514f", "#f25f5c", "#ffe066", "#247ba0", "#70c1b3"];
 let offset = {};
 
 let isMouseDown = false;
+let idx;
 
 addEventListener("mousedown", e => {
 	for(let i = 0 ; i < notes.length ; i++){
@@ -21,13 +22,15 @@ addEventListener("mousedown", e => {
 				notes[j].isFlipped = false;
 			}
 
+			idx = i;
+
 			//notes.push(notes.splice(i, 1));
 			addEventListener("mousemove", e => {
-				onMouseMove(e, i);
+				onMouseMove(e);
 			});
 
 			addEventListener("mouseup", e => {
-				onMouseUp(e, i);
+				onMouseUp(e);
 			});
 
 			notes[i].isFlipped = !notes[i].isFlipped;
@@ -41,15 +44,32 @@ addEventListener("mousedown", e => {
 });
 
 
-function onMouseMove(e, idx){
+function onMouseMove(e){
 	if(notes[idx].isFlipped && isMouseDown){
 		notes[idx].x = e.clientX - offset.x;
 		notes[idx].y = e.clientY - offset.y;
 	}
 }
 
-function onMouseUp(e, idx){
-	isMouseDown = false;
+function onMouseUp(e){
+	if(!isMouseDown) return;
+ 	isMouseDown = false;
+
+	removeEventListener("mousemove", onMouseMove);
+	removeEventListener("mouseup", onMouseUp);
+
+	for(let i = 0 ; i < names.length ; i++){
+		let dx = (notes[idx].x + (notes[idx].x + notes[idx].width)) / 2 - names[i].x;
+		let dy = (notes[idx].y + (notes[idx].y + notes[idx].height)) / 2 - names[i].y;
+
+		dx = dx * dx;
+		dy = dy * dy;
+
+		if(Math.sqrt(dx + dy) < names[i].radius && notes[idx].color === names[i].color){
+			console.log("collision !!");
+			return;
+		}
+	}
 
 	notes[idx].x = notes[idx].offset.x;
 	notes[idx].y = notes[idx].offset.y;
@@ -168,8 +188,8 @@ class Name{
 		this.names = [];
 
 		this.velocity = {
-			x: Math.random() + 5,
-			y: Math.random() + 5
+			x: Math.random() + 1,
+			y: Math.random() + 1
 		}
 
 		this.x = x;
