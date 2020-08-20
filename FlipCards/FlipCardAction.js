@@ -7,7 +7,8 @@ canvas.height = innerHeight;
 const colors = ["#50514f", "#f25f5c", "#ffe066", "#247ba0", "#70c1b3"];
 let offset = {};
 
-let isMouseDown = false;
+let isMouseHold = false;
+let isNoteAndNameCollision = false;
 let idx;
 
 addEventListener("mousedown", e => {
@@ -15,7 +16,7 @@ addEventListener("mousedown", e => {
 		if(e.clientX > notes[i].x && e.clientX < notes[i].x + notes[i].width && 
 			e.clientY > notes[i].y && e.clientY < notes[i].y + notes[i].height){
 
-			isMouseDown = true;
+			isMouseHold = true;
 
 			for(let j = 0 ; j < notes.length ; j++){
 				if(j == i) continue;
@@ -44,15 +45,20 @@ addEventListener("mousedown", e => {
 
 
 function onMouseMove(e){
-	if(notes[idx].isFlipped && isMouseDown){
+	if(notes[idx].isFlipped && isMouseHold){
 		notes[idx].x = e.clientX - offset.x;
 		notes[idx].y = e.clientY - offset.y;
+
+		for(let i = 0 ; i < particles.length ; i++){
+			particles[i].x = notes[idx].x + (notes[idx].width / 2);
+			particles[i].y = notes[idx].y + (notes[idx].height / 2);
+		}
 	}
 }
 
 function onMouseUp(e){
-	if(!isMouseDown) return;
- 	isMouseDown = false;
+	if(!isMouseHold) return;
+ 	isMouseHold = false;
 
 	removeEventListener("mousemove", onMouseMove);
 	removeEventListener("mouseup", onMouseUp);
@@ -65,7 +71,10 @@ function onMouseUp(e){
 		dy = dy * dy;
 
 		if(Math.sqrt(dx + dy) < names[i].radius && notes[idx].color === names[i].color){
-			console.log("collision !!");
+			isNoteAndNameCollision = true;
+			notes.splice(idx, 1);
+			names.splice(i, 1);
+
 			return;
 		}
 	}
@@ -82,6 +91,7 @@ function setTheBoundary(){
 	c.moveTo(noteListBoxX, 0);
 	c.lineTo(noteListBoxX, noteListBoxY);
 	c.stroke();
+	c.closePath();
 }
 
 function randomIntFromRange(min, max){
@@ -174,6 +184,11 @@ class Note{
 		c.beginPath();
 		c.fillStyle = this.isFlipped ? this.color : "black"; 
 		c.fillRect(this.x, this.y, this.width, this.height);
+		
+		c.lineWidth = 3;
+		c.strokeStyle = "silver";
+		c.strokeRect(this.x, this.y, this.width, this.height);
+		c.lineWidth = 1;
 		c.closePath();
 	}
 
@@ -244,11 +259,28 @@ class Particle{
 		};
 
 		this.velocity = {
-			x: randomIntFromRange(-4, 4),
-			y: randomIntFromRange(-4, 4)
+			x: randomIntFromRange(-3, 3),
+			y: randomIntFromRange(-3, 3)
 		};
 
 		this.decreaseRate = 0.1;
+	}
+
+	init(){
+		this.x = this.offset.x;
+		this.y = this.offset.y;
+
+		this.radius = this.offset.radius;
+
+		this.color = colors[Math.floor(Math.random() * colors.length)];
+		
+		this.velocity = {
+			x: randomIntFromRange(-3, 3),
+			y: randomIntFromRange(-3, 3)
+		}
+		
+		this.decreaseRate = 0.1;
+		isNoteAndNameCollision = false;
 	}
 
 	draw(){
@@ -260,25 +292,15 @@ class Particle{
 	}
 
 	update(){
-		if(this.x - this.radius <= 0 || this.x + this.radius >= noteListBoxX){
+		if(this.x - this.radius <= 0 || this.x + this.radius >= noteListBoxX)
 			this.velocity.x = -this.velocity.x;
-		}
 
-		if(this.y - this.radius <= 0 || this.y + this.radius >= noteListBoxY){
+		if(this.y - this.radius <= 0 || this.y + this.radius >= noteListBoxY)
 			this.velocity.y = -this.velocity.y;
-		}
 
 		if(this.radius < 0){
-			this.radius = this.offset.radius;
-			this.x = this.offset.x;
-			this.y = this.offset.y;
-			this.color = colors[Math.floor(Math.random() * colors.length)];
-			this.velocity = {
-				x: randomIntFromRange(-4, 4),
-				y: randomIntFromRange(-4, 4)
-			}
-			this.decreaseRate = 0.1;
-
+			this.init();
+			return;
 		}
 
 		this.draw();
@@ -317,7 +339,7 @@ function init(){
 	copyColors = [...colors];
 
 	for(let i = 0 ; i < 5 ; i++){
-		const radius = 50;
+		const radius = 70;
 		let x = randomIntFromRange(radius, noteListBoxX - radius);
 		let y = randomIntFromRange(radius, noteListBoxY - radius);
 		
@@ -347,17 +369,20 @@ function animate(){
 
 	setTheBoundary();
 
+	names.forEach(name => {
+		name.update();
+	});
+	
 	notes.forEach(note => {
 		note.update();
 	});
 
-	names.forEach(name => {
-		name.update();
-	});
 
-	particles.forEach(particle => {
-		particle.update();
-	})
+	if(isNoteAndNameCollision){
+		particles.forEach(particle => {
+			particle.update();
+		});
+	}
 }
 
 init();
