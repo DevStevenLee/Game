@@ -24,7 +24,6 @@ addEventListener("mousedown", e => {
 
 			idx = i;
 
-			//notes.push(notes.splice(i, 1));
 			addEventListener("mousemove", e => {
 				onMouseMove(e);
 			});
@@ -231,14 +230,76 @@ class Name{
 	}
 }
 
+
+class Particle{
+	constructor(x, y, radius){
+		this.x = x;
+		this.y = y;
+		this.radius = radius;
+		this.color = colors[Math.floor(Math.random() * colors.length)];
+		this.offset = {
+			x: this.x,
+			y: this.y,
+			radius: this.radius
+		};
+
+		this.velocity = {
+			x: randomIntFromRange(-4, 4),
+			y: randomIntFromRange(-4, 4)
+		};
+
+		this.decreaseRate = 0.1;
+	}
+
+	draw(){
+		c.beginPath();
+		c.fillStyle = this.color;
+		c.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+		c.fill();
+		c.closePath();
+	}
+
+	update(){
+		if(this.x - this.radius <= 0 || this.x + this.radius >= noteListBoxX){
+			this.velocity.x = -this.velocity.x;
+		}
+
+		if(this.y - this.radius <= 0 || this.y + this.radius >= noteListBoxY){
+			this.velocity.y = -this.velocity.y;
+		}
+
+		if(this.radius < 0){
+			this.radius = this.offset.radius;
+			this.x = this.offset.x;
+			this.y = this.offset.y;
+			this.color = colors[Math.floor(Math.random() * colors.length)];
+			this.velocity = {
+				x: randomIntFromRange(-4, 4),
+				y: randomIntFromRange(-4, 4)
+			}
+			this.decreaseRate = 0.1;
+
+		}
+
+		this.draw();
+
+		this.x += this.velocity.x;
+		this.y += this.velocity.y;
+		this.radius -= this.decreaseRate;
+		this.decreaseRate += 0.08;
+	}
+
+}
+
 const noteListBoxX = canvas.width * 4 / 5;
 const noteListBoxY = canvas.height;
 
-let notes, names;
+let notes, names, particles;
 
 function init(){
 	notes = [];
 	names = [];
+	particles = [];
 
 	let rectWidth = 100;
 	let rectHeight = 130;
@@ -272,6 +333,11 @@ function init(){
 		names.push(new Name(x, y, radius, randomColor(copyColors)));			
 	}
 
+	copyColors = [...colors];
+	for(let i = 0 ; i < 10 ; i++){
+		particles.push(new Particle(canvas.width / 2, canvas.height / 2, 30));
+	}
+
 }
 
 
@@ -288,6 +354,10 @@ function animate(){
 	names.forEach(name => {
 		name.update();
 	});
+
+	particles.forEach(particle => {
+		particle.update();
+	})
 }
 
 init();
