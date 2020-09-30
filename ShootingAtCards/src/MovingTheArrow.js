@@ -21,28 +21,48 @@ class Arrow{
 		this.toX = toX;
 		this.toY = toY;
 
-		this.arrowH eadSize = arrowHeadSize;
+		this.offset = {
+			centerX : this.centerX,
+			centerY : this.centerY,
+			toX : this.toX,
+			toY : this.toY
+		};
 
-		this.inclination = (this.toY - this.centerY) / (this.toX - this.centerX);
+		this.velocityX = this.setVelocityX();
+		this.velocityY = this.setVelocityY();
+
+		this.arrowHeadSize = arrowHeadSize;
+		this.slope = (this.toY - this.centerY) / (this.toX - this.centerX);
 	}
 
-	linearEquationForArrowByCenter(nextX){
-		return (this.inclination * nextX) - (this.inclination * this.centerX) + this.centerY;
-	}	
+	init(){
+		this.centerX = this.offset.centerX;
+		this.centerY = this.offset.centerY;
+		this.toX = this.offset.toX;
+		this.toY = this.offset.toY;
+	}
 
-	linearEquationForArrowByTo(nextX){
-		return (this.inclination * nextX) - (this.inclination * this.toX) + this.toY;
-	}	
+	setVelocityX(){
+		let dx = this.toX - this.centerX;
+		let dy = this.toY - this.centerY;
 
-	drawArrow(centerX, centerY, toX, toY){
-		if(this.isTheArrowOutOfTheMap(centerX, centerY)){
-			isTheArrowShot = false;
-			arrowMoveX = 0;
-			return;
-		}
+		let mag = Math.sqrt(dx * dx + dy * dy);
 
-		let dx = toX - centerX;
-		let dy = toY - centerY;
+		return (dx / mag) * arrowMoveSpeed;
+	}
+
+	setVelocityY(){
+		let dx = this.toX - this.centerX;
+		let dy = this.toY - this.centerY;
+
+		let mag = Math.sqrt(dx * dx + dy * dy);
+
+		return (dy / mag) * arrowMoveSpeed;
+	}
+
+	drawArrow(){
+		let dx = this.toX - this.centerX;
+		let dy = this.toY - this.centerY;
 
 		let angle = Math.atan2(dy, dx);
 
@@ -50,25 +70,19 @@ class Arrow{
 
 		c.lineWidth = 1.5;
 
-		c.moveTo(centerX, centerY);
-		c.lineTo(toX, toY);
-		c.lineTo(toX - this.arrowHeadSize * Math.cos(angle - Math.PI / 5), toY - this.arrowHeadSize * Math.sin(angle - Math.PI / 5));
-		c.moveTo(toX, toY);
-		c.lineTo(toX - this.arrowHeadSize * Math.cos(angle + Math.PI / 5), toY - this.arrowHeadSize * Math.sin(angle + Math.PI / 5));
+		c.moveTo(this.centerX, this.centerY);
+		c.lineTo(this.toX, this.toY);
+		c.lineTo(this.toX - this.arrowHeadSize * Math.cos(angle - Math.PI / 5), this.toY - this.arrowHeadSize * Math.sin(angle - Math.PI / 5));
+		c.moveTo(this.toX, this.toY);
+		c.lineTo(this.toX - this.arrowHeadSize * Math.cos(angle + Math.PI / 5), this.toY - this.arrowHeadSize * Math.sin(angle + Math.PI / 5));
 	
 		c.stroke();
 
 		c.closePath();
 	}
 
-	drawMotionOfShooting(distance){
-		if(isTheArrowShot)
-			this.drawArrow(this.centerX + distance, this.linearEquationForArrowByCenter(this.centerX + distance),
-							this.toX + distance, this.linearEquationForArrowByTo(this.toX + distance));
-	}
-
-	isTheArrowOutOfTheMap(centerX, centerY){
-		if(centerX <= -100 || centerX >= canvas.width || centerY <= -100 || centerY >= canvas.height)
+	isTheArrowOutOfTheMap(){
+		if(this.centerX <= -20 || this.centerX >= canvas.width || this.centerY <= -20 || this.centerY >= canvas.height)
 			return true;
 
 		return false;
@@ -118,13 +132,15 @@ function init(){
 }
 
 let arrowIdx = 0;
-let arrowMoveX = 0;
+let arrowMoveSpeed = 5;
+
 function animation(){
 	requestAnimationFrame(animation);
 
 	if(arrowIdx >= arrows.length - 1)
 		arrowIdx = 0;
 
+	//c.clearRect(0, 0, canvas.width, canvas.height);
 	if(!isTheArrowShot){
 		c.clearRect(0, 0, canvas.width, canvas.height);
 		arrows[arrowIdx].drawArrow(arrows[arrowIdx].centerX, arrows[arrowIdx].centerY, arrows[arrowIdx].toX, arrows[arrowIdx].toY);
@@ -134,12 +150,17 @@ function animation(){
 		c.fillStyle = "rgba(255, 255, 255, 0.3)";
 		c.fillRect(0, 0, canvas.width, canvas.height);
 		
-		if(arrows[arrowIdx].inclination >= 0)
-			arrowMoveX--;
-		else
-			arrowMoveX++;
+		arrows[arrowIdx].centerX+=arrows[arrowIdx].velocityX;
+		arrows[arrowIdx].centerY+=arrows[arrowIdx].velocityY;
+		arrows[arrowIdx].toX+=arrows[arrowIdx].velocityX;
+		arrows[arrowIdx].toY+=arrows[arrowIdx].velocityY;
 
-		arrows[arrowIdx].drawMotionOfShooting(arrowMoveX);
+		if(arrows[arrowIdx].isTheArrowOutOfTheMap()){
+			arrows[arrowIdx].init();
+			isTheArrowShot = false;
+		}
+
+		arrows[arrowIdx].drawArrow();
 	}
 }
 
