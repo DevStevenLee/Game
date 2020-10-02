@@ -98,7 +98,7 @@ let speed = 1;
 function init(){
 	arrows = [];
 
-	let radius = 180;
+	let radius = 120;
 	let centerX = canvas.width / 2;
 	let centerY = canvas.height - 10;
 	let arrowHeadSize = 20;
