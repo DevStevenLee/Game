@@ -1,3 +1,6 @@
+import * as target from "./Targets.js";
+import * as fadeCard from "./FadeCard.js";
+import * as firework from "./FireworkEffect.js";
 
 const canvas = document.getElementById("canvas");
 const c = canvas.getContext("2d");
@@ -5,138 +8,199 @@ const c = canvas.getContext("2d");
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
-class Particle{
-    constructor(pos){
-        this.pos = {
-            x: pos.x,
-            y: pos.y
+
+let isTheArrowShot = false;
+let isTheArrowCollided = false;
+
+addEventListener("keydown", e => {
+    if(e.keyCode == 32)
+        isTheArrowShot = true;
+});
+
+
+class Arrow{
+    constructor(radius, centerX, centerY, toX, toY, arrowHeadSize){
+        this.radius = radius;
+        this.centerX = centerX;
+        this.centerY = centerY;
+        this.toX = toX;
+        this.toY = toY;
+
+        this.offset = {
+            centerX : this.centerX,
+            centerY : this.centerY,
+            toX : this.toX,
+            toY : this.toY
         };
-        this.vel = {
-            x: 0,
-            y: 0
-        };
-        this.shrink = .97;
-        this.size = 20;
 
-        this.resistance = 1;
-        this.gravity = 0;
+        this.velocityX = this.setVelocityX();
+        this.velocityY = this.setVelocityY();
 
-        this.flick = false;
-
-        this.alpha = 1;
-        this.fade = 0;
-        this.color = 0;
-
-        this.explosionColor = Math.floor(Math.random() * 360 / 10) * 10;
+        this.arrowHeadSize = arrowHeadSize;
+        this.slope = (this.toY - this.centerY) / (this.toX - this.centerX);
     }
 
-    update(){
-        // apply resistance
-        this.vel.x *= this.resistance;
-        this.vel.y *= this.resistance;
-
-        // gravity down
-        this.vel.y += this.gravity;
-
-        // update position based on speed
-        this.pos.x += this.vel.x;
-        this.pos.y += this.vel.y;
-
-        // shrink
-        this.size *= this.shrink;
-
-        // fade out
-        this.alpha -= this.fade;
+    init(){
+        this.centerX = this.offset.centerX;
+        this.centerY = this.offset.centerY;
+        this.toX = this.offset.toX;
+        this.toY = this.offset.toY;
     }
 
-    render(){
-        if (!this.exists()) {
-            return;
-        }
+    setVelocityX(){
+        let dx = this.toX - this.centerX;
+        let dy = this.toY - this.centerY;
 
-        c.save();
+        let mag = Math.sqrt(dx * dx + dy * dy);
 
-        c.globalCompositeOperation = 'lighter';
+        return (dx / mag) * arrowMoveSpeed;
+    }
 
-        let x = this.pos.x,
-        y = this.pos.y,
-        r = this.size / 2;
+    setVelocityY(){
+        let dx = this.toX - this.centerX;
+        let dy = this.toY - this.centerY;
 
-        let gradient = c.createRadialGradient(x, y, 0.1, x, y, r);
-        gradient.addColorStop(0.1, "rgba(255,255,255," + this.alpha + ")");
-        gradient.addColorStop(0.8, "hsla(" + this.color + ", 100%, 50%, " + this.alpha + ")");
-        gradient.addColorStop(1, "hsla(" + this.color + ", 100%, 50%, 0.1)");
+        let mag = Math.sqrt(dx * dx + dy * dy);
 
-        c.fillStyle = gradient;
+        return (dy / mag) * arrowMoveSpeed;
+    }
+
+    drawArrow(){
+        let dx = this.toX - this.centerX;
+        let dy = this.toY - this.centerY;
+
+        let angle = Math.atan2(dy, dx);
 
         c.beginPath();
-        c.arc(this.pos.x, this.pos.y, this.flick ? Math.random() * this.size : this.size, 0, Math.PI * 2, true);
+
+        c.lineWidth = 3;
+
+        c.moveTo(this.centerX, this.centerY);
+        c.lineTo(this.toX, this.toY);
+        c.lineTo(this.toX - this.arrowHeadSize * Math.cos(angle - Math.PI / 5), this.toY - this.arrowHeadSize * Math.sin(angle - Math.PI / 5));
+
+        c.moveTo(this.toX, this.toY);
+    
+        c.lineTo(this.toX - this.arrowHeadSize * Math.cos(angle + Math.PI / 5), this.toY - this.arrowHeadSize * Math.sin(angle + Math.PI / 5));
+        
         c.closePath();
-        c.fill();
+        c.stroke();
+        
+        c.lineWidth = 1;
 
-        c.restore();
+        c.closePath();
     }
 
-    explode(){
-        let count = Math.random() * 10 + 80;
+    isTheArrowOutOfTheMap(){
+        if(this.centerX <= -20 || this.centerX >= canvas.width || this.centerY <= -20 || this.centerY >= canvas.height)
+            return true;
 
-        for (var i = 0; i < count; i++) {
-            let particle = new Particle(this.pos);
-            let angle = Math.random() * Math.PI * 2;
-
-            // emulate 3D effect by using cosine and put more particles in the middle
-            let speed = Math.cos(Math.random() * Math.PI / 2) * 15;
-
-            particle.vel.x = Math.cos(angle) * speed;
-            particle.vel.y = Math.sin(angle) * speed;
-
-            particle.size = 10;
-
-            particle.gravity = 0.2;
-            particle.resistance = 0.92;
-            particle.shrink = Math.random() * 0.05 + 0.93;
-
-            particle.flick = true;
-            particle.color = this.explosionColor;
-
-            particles.push(particle);
-        }      
+        return false;
     }
-
-	exists() {
-    	return this.alpha >= 0.1 && this.size >= 1;
-	}
-	
-}
-
-let particle;
-let particles;
-
-
-function init(pos){
-	
-    particles = [];
-    particle = new Particle(pos);
-	
-	particle.explode();
-}
-
-function animation(){ 
-    let existingParticles = [];
-	
-	//console.log(particles);
-    particles.forEach(particle => {
-        particle.update();
-		
-        if (particle.exists()) {
-            particle.render();
-            existingParticles.push(particle);
+    
+    isTheArrowCollidedWithTargets(){
+        for(let i = 0 ; i < target.cards.length ; i++){
+            if( arrows[arrowIdx].toX > target.cards[i].x && 
+                arrows[arrowIdx].toX < target.cards[i].x + target.cards[i].width &&
+                arrows[arrowIdx].toY > target.cards[i].y && 
+                arrows[arrowIdx].toY < target.cards[i].y + target.cards[i].height){
+                
+                if(target.cards[i].color == fadeCard.fadeCards[0].color){
+                    isTheArrowCollided = true;
+                
+                    firework.init({x: (target.cards[i].x + target.cards[i].x + target.cards[i].width) / 2, 
+                                   y : (target.cards[i].y + target.cards[i].y + target.cards[i].height) / 2});
+                
+                
+                    target.cards.splice(i, 1);
+                    fadeCard.fadeCards.splice(0, 1);
+                }
+                
+                return true;
+            }
         }
-    });
+        
+        return false;
+    }
+ 
+}
 
-	//console.log("test");
-    particles = existingParticles;
-} 
+function toRadians(degree){
+    return degree * (Math.PI / 180);
+}
+
+let arrows;
+
+function init(){
+    arrows = [];
+
+    
+    let radius = 120;
+    let centerX = canvas.width / 2;
+    let centerY = canvas.height - 10;
+    let arrowHeadSize = 20;
+    let speed = 1;
+
+    for(let i = 180 ; i <= 360 ; i+=speed){
+        let toX = Math.floor(radius * Math.cos(toRadians(i)));
+        let toY = Math.floor(radius * Math.sin(toRadians(i)));
+    
+        if(i <= 270)
+            speed+=0.04;
+        else if(i > 270){
+            speed-=0.04;
+        }
+
+        arrows.push(new Arrow(radius, centerX, centerY, centerX + toX, centerY + toY, arrowHeadSize));
+    }
+
+    speed = 1;
+    for(let i = 360 ; i >= 180 ; i-=speed){
+        let toX = Math.floor(radius * Math.cos(toRadians(i)));
+        let toY = Math.floor(radius * Math.sin(toRadians(i)));
+    
+        if(i > 270)
+            speed+=0.04;
+        else if(i <= 270){
+            speed-=0.04;
+        }
+
+        arrows.push(new Arrow(radius, centerX, centerY, centerX + toX, centerY + toY, arrowHeadSize));
+    }
+}
+
+let arrowIdx = 0;
+let arrowMoveSpeed = 8;
+function animation(){
+    if(arrowIdx >= arrows.length - 1)
+        arrowIdx = 0;
+
+    if(isTheArrowCollided){
+        firework.animation();
+            
+        if(firework.particles.length < 1)
+            isTheArrowCollided = false;
+    }
+    
+    if(!isTheArrowShot){
+        arrows[arrowIdx].drawArrow(arrows[arrowIdx].centerX, arrows[arrowIdx].centerY, arrows[arrowIdx].toX, arrows[arrowIdx].toY);
+        arrowIdx++;
+    }
+    
+    else{   
+        arrows[arrowIdx].centerX+=arrows[arrowIdx].velocityX;
+        arrows[arrowIdx].centerY+=arrows[arrowIdx].velocityY;
+        arrows[arrowIdx].toX+=arrows[arrowIdx].velocityX;
+        arrows[arrowIdx].toY+=arrows[arrowIdx].velocityY;
+        
+        if(arrows[arrowIdx].isTheArrowCollidedWithTargets() || arrows[arrowIdx].isTheArrowOutOfTheMap()){
+            arrows[arrowIdx].init();
+            isTheArrowShot = false;
+        }
+
+        arrows[arrowIdx].drawArrow();
+    }
+}
 
 
-export { init, animation, particles };
+export { init, animation, isTheArrowCollided};
