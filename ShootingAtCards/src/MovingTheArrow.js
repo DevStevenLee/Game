@@ -1,168 +1,142 @@
+
 const canvas = document.getElementById("canvas");
 const c = canvas.getContext("2d");
 
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
+class Particle{
+    constructor(pos){
+        this.pos = {
+            x: pos.x,
+            y: pos.y
+        };
+        this.vel = {
+            x: 0,
+            y: 0
+        };
+        this.shrink = .97;
+        this.size = 20;
 
-let isTheArrowShot = false;
+        this.resistance = 1;
+        this.gravity = 0;
 
-addEventListener("keydown", e => {
-	if(e.keyCode == 32)
-		isTheArrowShot = true;
-});
+        this.flick = false;
 
+        this.alpha = 1;
+        this.fade = 0;
+        this.color = 0;
 
-class Arrow{
-	constructor(radius, centerX, centerY, toX, toY, arrowHeadSize){
-		this.radius = radius;
-		this.centerX = centerX;
-		this.centerY = centerY;
-		this.toX = toX;
-		this.toY = toY;
+        this.explosionColor = Math.floor(Math.random() * 360 / 10) * 10;
+    }
 
-		this.offset = {
-			centerX : this.centerX,
-			centerY : this.centerY,
-			toX : this.toX,
-			toY : this.toY
-		};
+    update(){
+        // apply resistance
+        this.vel.x *= this.resistance;
+        this.vel.y *= this.resistance;
 
-		this.velocityX = this.setVelocityX();
-		this.velocityY = this.setVelocityY();
+        // gravity down
+        this.vel.y += this.gravity;
 
-		this.arrowHeadSize = arrowHeadSize;
-		this.slope = (this.toY - this.centerY) / (this.toX - this.centerX);
+        // update position based on speed
+        this.pos.x += this.vel.x;
+        this.pos.y += this.vel.y;
+
+        // shrink
+        this.size *= this.shrink;
+
+        // fade out
+        this.alpha -= this.fade;
+    }
+
+    render(){
+        if (!this.exists()) {
+            return;
+        }
+
+        c.save();
+
+        c.globalCompositeOperation = 'lighter';
+
+        let x = this.pos.x,
+        y = this.pos.y,
+        r = this.size / 2;
+
+        let gradient = c.createRadialGradient(x, y, 0.1, x, y, r);
+        gradient.addColorStop(0.1, "rgba(255,255,255," + this.alpha + ")");
+        gradient.addColorStop(0.8, "hsla(" + this.color + ", 100%, 50%, " + this.alpha + ")");
+        gradient.addColorStop(1, "hsla(" + this.color + ", 100%, 50%, 0.1)");
+
+        c.fillStyle = gradient;
+
+        c.beginPath();
+        c.arc(this.pos.x, this.pos.y, this.flick ? Math.random() * this.size : this.size, 0, Math.PI * 2, true);
+        c.closePath();
+        c.fill();
+
+        c.restore();
+    }
+
+    explode(){
+        let count = Math.random() * 10 + 80;
+
+        for (var i = 0; i < count; i++) {
+            let particle = new Particle(this.pos);
+            let angle = Math.random() * Math.PI * 2;
+
+            // emulate 3D effect by using cosine and put more particles in the middle
+            let speed = Math.cos(Math.random() * Math.PI / 2) * 15;
+
+            particle.vel.x = Math.cos(angle) * speed;
+            particle.vel.y = Math.sin(angle) * speed;
+
+            particle.size = 10;
+
+            particle.gravity = 0.2;
+            particle.resistance = 0.92;
+            particle.shrink = Math.random() * 0.05 + 0.93;
+
+            particle.flick = true;
+            particle.color = this.explosionColor;
+
+            particles.push(particle);
+        }      
+    }
+
+	exists() {
+    	return this.alpha >= 0.1 && this.size >= 1;
 	}
-
-	init(){
-		this.centerX = this.offset.centerX;
-		this.centerY = this.offset.centerY;
-		this.toX = this.offset.toX;
-		this.toY = this.offset.toY;
-	}
-
-	setVelocityX(){
-		let dx = this.toX - this.centerX;
-		let dy = this.toY - this.centerY;
-
-		let mag = Math.sqrt(dx * dx + dy * dy);
-
-		return (dx / mag) * arrowMoveSpeed;
-	}
-
-	setVelocityY(){
-		let dx = this.toX - this.centerX;
-		let dy = this.toY - this.centerY;
-
-		let mag = Math.sqrt(dx * dx + dy * dy);
-
-		return (dy / mag) * arrowMoveSpeed;
-	}
-
-	drawArrow(){
-		let dx = this.toX - this.centerX;
-		let dy = this.toY - this.centerY;
-
-		let angle = Math.atan2(dy, dx);
-
-		c.beginPath();
-
-		c.lineWidth = 1.5;
-
-		c.moveTo(this.centerX, this.centerY);
-		c.lineTo(this.toX, this.toY);
-		c.lineTo(this.toX - this.arrowHeadSize * Math.cos(angle - Math.PI / 5), this.toY - this.arrowHeadSize * Math.sin(angle - Math.PI / 5));
-		c.moveTo(this.toX, this.toY);
-		c.lineTo(this.toX - this.arrowHeadSize * Math.cos(angle + Math.PI / 5), this.toY - this.arrowHeadSize * Math.sin(angle + Math.PI / 5));
 	
-		c.stroke();
-
-		c.closePath();
-	}
-
-	isTheArrowOutOfTheMap(){
-		if(this.centerX <= -20 || this.centerX >= canvas.width || this.centerY <= -20 || this.centerY >= canvas.height)
-			return true;
-
-		return false;
-	}
 }
 
-function toRadians(degree){
-	return degree * (Math.PI / 180);
+let particle;
+let particles;
+
+
+function init(pos){
+	
+    particles = [];
+    particle = new Particle(pos);
+	
+	particle.explode();
 }
 
-let arrows;
-let speed = 1;
-function init(){
-	arrows = [];
-
-	let radius = 120;
-	let centerX = canvas.width / 2;
-	let centerY = canvas.height - 10;
-	let arrowHeadSize = 20;
-
-	for(let i = 180 ; i <= 360 ; i+=speed){
-		let toX = Math.floor(radius * Math.cos(toRadians(i)));
-		let toY = Math.floor(radius * Math.sin(toRadians(i)));
+function animation(){ 
+    let existingParticles = [];
 	
-		if(i <= 270)
-			speed+=0.04;
-		else if(i > 270){
-			speed-=0.04;
-		}
-
-		arrows.push(new Arrow(radius, centerX, centerY, centerX + toX, centerY + toY, arrowHeadSize));
-	}
-
-	speed = 1;
-	for(let i = 360 ; i >= 180 ; i-=speed){
-		let toX = Math.floor(radius * Math.cos(toRadians(i)));
-		let toY = Math.floor(radius * Math.sin(toRadians(i)));
-	
-		if(i > 270)
-			speed+=0.04;
-		else if(i <= 270){
-			speed-=0.04;
-		}
-
-		arrows.push(new Arrow(radius, centerX, centerY, centerX + toX, centerY + toY, arrowHeadSize));
-	}
-}
-
-let arrowIdx = 0;
-let arrowMoveSpeed = 5;
-
-function animation(){
-	requestAnimationFrame(animation);
-
-	if(arrowIdx >= arrows.length - 1)
-		arrowIdx = 0;
-
-	//c.clearRect(0, 0, canvas.width, canvas.height);
-	if(!isTheArrowShot){
-		c.clearRect(0, 0, canvas.width, canvas.height);
-		arrows[arrowIdx].drawArrow(arrows[arrowIdx].centerX, arrows[arrowIdx].centerY, arrows[arrowIdx].toX, arrows[arrowIdx].toY);
-		arrowIdx++;
-	}
-	else{
-		c.fillStyle = "rgba(255, 255, 255, 0.3)";
-		c.fillRect(0, 0, canvas.width, canvas.height);
+	//console.log(particles);
+    particles.forEach(particle => {
+        particle.update();
 		
-		arrows[arrowIdx].centerX+=arrows[arrowIdx].velocityX;
-		arrows[arrowIdx].centerY+=arrows[arrowIdx].velocityY;
-		arrows[arrowIdx].toX+=arrows[arrowIdx].velocityX;
-		arrows[arrowIdx].toY+=arrows[arrowIdx].velocityY;
+        if (particle.exists()) {
+            particle.render();
+            existingParticles.push(particle);
+        }
+    });
 
-		if(arrows[arrowIdx].isTheArrowOutOfTheMap()){
-			arrows[arrowIdx].init();
-			isTheArrowShot = false;
-		}
+	//console.log("test");
+    particles = existingParticles;
+} 
 
-		arrows[arrowIdx].drawArrow();
-	}
-}
 
-init();
-animation();
+export { init, animation, particles };
