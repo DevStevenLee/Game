@@ -1,4 +1,4 @@
-import * as foodCard from "./FoodCard.js";
+import * as foodCard from "./FoodCards.js";
 
 let isMouseHold = false;
 
