@@ -13,7 +13,7 @@ class FoodCard{
 		this.height = height;
 	}
 
-	drawCard(){
+	draw(){
 		c.fillStyle = this.color;
 		c.fillRect(this.x, this.y, this.width, this.height);
 		
