@@ -1,4 +1,4 @@
-import * as foodCard from "./FoodCards.js";
+import { foodCards } from "./FoodCards.js";
 
 let isMouseHold = false;
 
@@ -8,13 +8,13 @@ let offset = {};
 
 function handleEvents(){
 	addEventListener("mousedown", e => {
-		for(let i = 0 ; i < foodCard.foodCards.length ; i++){
-			if(e.clientX > foodCard.foodCards[i].x && e.clientX < foodCard.foodCards[i].x + foodCard.foodCards[i].width && 
-				e.clientY > foodCard.foodCards[i].y && e.clientY < foodCard.foodCards[i].y + foodCard.foodCards[i].height){
+		for(let i = 0 ; i < foodCards.length ; i++){
+			if(e.clientX > foodCards[i].x && e.clientX < foodCards[i].x + foodCards[i].width && 
+				e.clientY > foodCards[i].y && e.clientY < foodCards[i].y + foodCards[i].height){
 
 				isMouseHold = true;
 				selectedCardIdx = i;
-
+				
 				addEventListener("mousemove", e => {
 					onMouseMove(e);
 				});
@@ -23,29 +23,26 @@ function handleEvents(){
 					onMouseUp(e);
 				});
 		
-				offset.x = e.clientX - notes[i].x;
-				offset.y = e.clientY - notes[i].y;
+				offset.x = e.clientX - foodCards[i].x;
+				offset.y = e.clientY - foodCards[i].y;
 
 				break;
 			}
 		}
 	});
 
+}
 
-	function onMouseMove(e){
-		if(isMouseHold){
-			foodCard.foodCards[selectedCardIdx].x = e.clientX - offset.x;
-			[idx].y = e.clientY - offset.y;
-		}
-	}
-
-	function onMouseUp(e){
-		if(!isMouseHold) return;
- 		isMouseHold = false;
-
-		removeEventListener("mousemove", onMouseMove);
-		removeEventListener("mouseup", onMouseUp);
+function onMouseMove(e){
+	if(isMouseHold){
+		foodCards[selectedCardIdx].x = e.clientX - offset.x;
+		foodCards[selectedCardIdx].y = e.clientY - offset.y;
 	}
 }
 
-export { foodCard, handleEvents };
+function onMouseUp(e){
+	if(!isMouseHold) return;
+ 	isMouseHold = false;
+}
+
+export { foodCards, handleEvents };

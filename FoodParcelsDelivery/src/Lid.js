@@ -1,10 +1,13 @@
+import { foodCards } from "./foodCards.js";
+
 const canvas = document.getElementById("canvas");
 const c = canvas.getContext("2d");
 
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
-class FoodCard{
+
+class Lid{
 	constructor(x, y, width, height){
 		this.x = x;
 		this.y = y;
@@ -26,33 +29,17 @@ class FoodCard{
 		
 		c.fillStyle = "black";
 	}
-	
-	setColors(color){
-		this.color = color;
-	}
 }
 
-let foodCards;
-const gapBetweenCards = 200;
-const rectWidth = canvas.width / 15;
-const rectHeight = canvas.width / 12;
 
-
+let lid;
 function init(){
-	foodCards = [];
+	let x = foodCards[0].x;
+	let y = foodCards[0].y - foodCards[0].height;
+	let height = foodCards[0].height * 2;
+	let width = foodCards[0].width * 2;
 
-	let x = gapBetweenCards;
-	let y = canvas.height - 1.3 * rectHeight;
-	
-	while(x + rectWidth < canvas.width){
-		
-		foodCards.push(new FoodCard(x, y, rectWidth, rectHeight));
-
-		x = x + rectWidth + gapBetweenCards;
-	}
+	lid = new Lid(x, y, height, width);
 }
 
-init();
-
-export { foodCards };
-
+export { lid };
