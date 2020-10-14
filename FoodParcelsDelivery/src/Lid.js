@@ -1,4 +1,4 @@
-import { foodCards } from "./foodCards.js";
+import { foodCards } from "./FoodCards.js";
 
 const canvas = document.getElementById("canvas");
 const c = canvas.getContext("2d");
